@@ -44,7 +44,17 @@ async function BTCDaily() {
     return row
 }
 
-// update file in the target github repo
+// Get the Monday of the week for a given date
+function getWeekStart(date) {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust to Monday
+    d.setDate(diff);
+    d.setHours(0, 0, 0, 0);
+    return d.toISOString().split('T')[0];
+}
+
+// update file in the target github repo with weekly data
 async function updateFile() {
     const row = await BTCDaily()
     //const row = []
@@ -54,8 +64,21 @@ async function updateFile() {
         //console.log("dirname", __dirname)
         const original = await fs.readFileSync(fileToRead)
         let orig = JSON.parse(original)
-        //console.log(orig[0])
-        orig.push(row)
+
+        const newWeekStart = getWeekStart(row.date);
+        const lastEntry = orig[orig.length - 1];
+        const lastWeekStart = lastEntry ? getWeekStart(lastEntry.date) : null;
+
+        // If the new data is from the same week as the last entry, update it
+        // Otherwise, add a new entry for the new week
+        if (lastWeekStart === newWeekStart) {
+            console.log("Updating same week entry");
+            orig[orig.length - 1] = row;
+        } else {
+            console.log("Adding new week entry");
+            orig.push(row);
+        }
+
         //console.log(orig[orig.length - 1])
         const new_content = JSON.stringify(orig)
         await fs.writeFileSync(fileToWrite, new_content);
