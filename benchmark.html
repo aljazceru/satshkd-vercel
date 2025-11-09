@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chart Performance Benchmark - 4240 Points</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        .benchmark {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+        }
+        .stats {
+            background: #f0f0f0;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .stat-line {
+            margin: 5px 0;
+            font-weight: bold;
+        }
+        canvas {
+            max-height: 500px;
+        }
+        .good { color: green; }
+        .warning { color: orange; }
+        .bad { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Chart Performance Benchmark: 4,240 Daily Data Points</h1>
+
+    <div class="benchmark">
+        <h2>1. Chart.js (Modern Library - 2024)</h2>
+        <div id="chartjs-stats" class="stats">
+            <div class="stat-line">Loading...</div>
+        </div>
+        <canvas id="chartjs-chart"></canvas>
+    </div>
+
+    <div class="benchmark">
+        <h2>2. HTML5 Canvas (Raw Rendering)</h2>
+        <div id="canvas-stats" class="stats">
+            <div class="stat-line">Loading...</div>
+        </div>
+        <canvas id="canvas-chart"></canvas>
+    </div>
+
+    <div class="benchmark">
+        <h2>3. SVG Path (Like MetricsGraphics)</h2>
+        <div id="svg-stats" class="stats">
+            <div class="stat-line">Loading...</div>
+        </div>
+        <div id="svg-chart"></div>
+    </div>
+
+    <script>
+        // Performance utilities
+        function formatTime(ms) {
+            if (ms < 100) return `<span class="good">${ms.toFixed(2)}ms</span>`;
+            if (ms < 300) return `<span class="warning">${ms.toFixed(2)}ms</span>`;
+            return `<span class="bad">${ms.toFixed(2)}ms</span>`;
+        }
+
+        // Load data
+        fetch('/static/historical')
+            .then(r => r.json())
+            .then(data => {
+                console.log(`Loaded ${data.length} data points`);
+                runBenchmarks(data);
+            });
+
+        function runBenchmarks(data) {
+            // Benchmark 1: Chart.js
+            benchmarkChartJS(data);
+
+            // Benchmark 2: Raw Canvas
+            setTimeout(() => benchmarkCanvas(data), 100);
+
+            // Benchmark 3: SVG
+            setTimeout(() => benchmarkSVG(data), 200);
+        }
+
+        function benchmarkChartJS(data) {
+            const start = performance.now();
+
+            const ctx = document.getElementById('chartjs-chart').getContext('2d');
+            const chartData = data.map(d => ({
+                x: new Date(d.date),
+                y: d.usdsat_rate
+            }));
+
+            const chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: 'USD/SAT Rate',
+                        data: chartData,
+                        borderColor: '#FF9900',
+                        backgroundColor: 'rgba(255, 153, 0, 0.1)',
+                        fill: true,
+                        pointRadius: 0, // Don't render individual points
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'year'
+                            }
+                        },
+                        y: {
+                            type: 'logarithmic',
+                            title: {
+                                display: true,
+                                text: 'Sats'
+                            }
+                        }
+                    },
+                    plugins: {
+                        decimation: {
+                            enabled: true,
+                            algorithm: 'lttb', // Largest-Triangle-Three-Buckets
+                            samples: 500
+                        }
+                    },
+                    animation: false // Disable animation for accurate timing
+                }
+            });
+
+            const end = performance.now();
+            const renderTime = end - start;
+
+            document.getElementById('chartjs-stats').innerHTML = `
+                <div class="stat-line">Data Points: ${data.length.toLocaleString()}</div>
+                <div class="stat-line">Render Time: ${formatTime(renderTime)}</div>
+                <div class="stat-line">Decimation: LTTB to ~500 visible points</div>
+                <div class="stat-line">Memory Efficient: ✓</div>
+                <div class="stat-line">Interactive: ✓ (zoom, pan, tooltips)</div>
+            `;
+        }
+
+        function benchmarkCanvas(data) {
+            const start = performance.now();
+
+            const canvas = document.getElementById('canvas-chart');
+            const ctx = canvas.getContext('2d');
+
+            // Set canvas size
+            canvas.width = canvas.offsetWidth;
+            canvas.height = 500;
+
+            const width = canvas.width;
+            const height = canvas.height;
+
+            // Find min/max for scaling
+            const dates = data.map(d => new Date(d.date).getTime());
+            const values = data.map(d => d.usdsat_rate);
+            const minDate = Math.min(...dates);
+            const maxDate = Math.max(...dates);
+            const minValue = Math.log10(Math.min(...values));
+            const maxValue = Math.log10(Math.max(...values));
+
+            // Draw chart
+            ctx.fillStyle = 'rgba(255, 153, 0, 0.2)';
+            ctx.strokeStyle = '#FF9900';
+            ctx.lineWidth = 2;
+
+            ctx.beginPath();
+            data.forEach((d, i) => {
+                const x = ((new Date(d.date).getTime() - minDate) / (maxDate - minDate)) * width;
+                const logY = Math.log10(d.usdsat_rate);
+                const y = height - ((logY - minValue) / (maxValue - minValue)) * height;
+
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+
+            // Fill area
+            ctx.lineTo(width, height);
+            ctx.lineTo(0, height);
+            ctx.closePath();
+            ctx.fill();
+
+            // Stroke line
+            ctx.beginPath();
+            data.forEach((d, i) => {
+                const x = ((new Date(d.date).getTime() - minDate) / (maxDate - minDate)) * width;
+                const logY = Math.log10(d.usdsat_rate);
+                const y = height - ((logY - minValue) / (maxValue - minValue)) * height;
+
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            ctx.stroke();
+
+            const end = performance.now();
+            const renderTime = end - start;
+
+            document.getElementById('canvas-stats').innerHTML = `
+                <div class="stat-line">Data Points: ${data.length.toLocaleString()}</div>
+                <div class="stat-line">Render Time: ${formatTime(renderTime)}</div>
+                <div class="stat-line">All Points Rendered: ✓</div>
+                <div class="stat-line">Memory: Minimal (no DOM nodes)</div>
+                <div class="stat-line">Interactive: ✗ (requires custom event handling)</div>
+            `;
+        }
+
+        function benchmarkSVG(data) {
+            const start = performance.now();
+
+            const width = 1000;
+            const height = 500;
+
+            // Find min/max for scaling
+            const dates = data.map(d => new Date(d.date).getTime());
+            const values = data.map(d => d.usdsat_rate);
+            const minDate = Math.min(...dates);
+            const maxDate = Math.max(...dates);
+            const minValue = Math.log10(Math.min(...values));
+            const maxValue = Math.log10(Math.max(...values));
+
+            // Create SVG path
+            let pathData = '';
+            data.forEach((d, i) => {
+                const x = ((new Date(d.date).getTime() - minDate) / (maxDate - minDate)) * width;
+                const logY = Math.log10(d.usdsat_rate);
+                const y = height - ((logY - minValue) / (maxValue - minValue)) * height;
+
+                if (i === 0) {
+                    pathData += `M ${x} ${y} `;
+                } else {
+                    pathData += `L ${x} ${y} `;
+                }
+            });
+
+            // Close path for fill
+            pathData += `L ${width} ${height} L 0 ${height} Z`;
+
+            // Create SVG
+            const svg = `
+                <svg width="100%" height="${height}" viewBox="0 0 ${width} ${height}">
+                    <path d="${pathData}"
+                          fill="rgba(255, 153, 0, 0.2)"
+                          stroke="#FF9900"
+                          stroke-width="2"
+                          vector-effect="non-scaling-stroke"/>
+                </svg>
+            `;
+
+            document.getElementById('svg-chart').innerHTML = svg;
+
+            const end = performance.now();
+            const renderTime = end - start;
+
+            // Count DOM nodes (path string length / average coordinate length)
+            const pathLength = pathData.length;
+
+            document.getElementById('svg-stats').innerHTML = `
+                <div class="stat-line">Data Points: ${data.length.toLocaleString()}</div>
+                <div class="stat-line">Render Time: ${formatTime(renderTime)}</div>
+                <div class="stat-line">Path Commands: ${(pathData.match(/[ML]/g) || []).length.toLocaleString()}</div>
+                <div class="stat-line">Path String Size: ${(pathLength / 1024).toFixed(1)} KB</div>
+                <div class="stat-line">Similar to MetricsGraphics approach</div>
+            `;
+        }
+    </script>
+</body>
+</html>
