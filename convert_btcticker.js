@@ -81,25 +81,31 @@ function hkdrate() {
 }
 
 function eurrate() {
-    const eurusd_rate = 0.92 // 1 USD = 0.92 EUR
-    const historical_merged = "./archive/historical_merged"
-    const histcontent = fs.readFileSync(historical_merged, { encoding: 'utf8' })
-    let hist = JSON.parse(histcontent)
+    const filepath = "./archive/btceur-kraken-historical.csv"
+    let data = []
 
-    let eurData = []
-    hist.forEach(function(entry) {
-        newEntry = {
-            "btcusd_rate": entry['btcusd_rate'],
-            "date": entry['date'],
-            "usdsat_rate": entry['usdsat_rate'],
-            "sateur_rate": parseInt(entry['usdsat_rate'] / eurusd_rate),
-            "btceur_rate": parseFloat(entry['btcusd_rate'] * eurusd_rate).toFixed(2),
-        }
-        eurData.push(newEntry)
-    })
-    const eurHistorical = JSON.stringify(eurData)
-    fs.writeFileSync("./public/historical", eurHistorical)
-    console.log("EUR historical data written to ./public/historical with " + eurData.length + " entries")
+    fs.createReadStream(filepath, 'utf-8', { headers: true })
+        .on('error', (err) => {
+            console.error("Error reading file:", err)
+        })
+        .pipe(csv())
+        .on('data', (row) => {
+            var keys = Object.keys(row)
+            // Remove commas and handle price field
+            var price = row["Price"].replace(/,/g, '')
+            let entry = {
+                "btceur_rate": parseFloat(price),
+                "date": new Date(row[keys[0]]).toISOString().split('T')[0],
+                "sateur_rate": parseInt((100000000 / parseFloat(price)).toFixed(0))
+            }
+            data.push(entry)
+        })
+        .on('end', () => {
+            // Reverse to get chronological order (oldest first)
+            const eurHistorical = JSON.stringify(data.reverse())
+            fs.writeFileSync("./public/historical", eurHistorical)
+            console.log("EUR historical data written to ./public/historical with " + data.length + " entries")
+        })
 }
 
 // first run convertformat then run hkdrate
