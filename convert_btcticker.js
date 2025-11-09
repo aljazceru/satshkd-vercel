@@ -80,7 +80,30 @@ function hkdrate() {
 
 }
 
+function eurrate() {
+    const eurusd_rate = 0.92 // 1 USD = 0.92 EUR
+    const historical_merged = "./archive/historical_merged"
+    const histcontent = fs.readFileSync(historical_merged, { encoding: 'utf8' })
+    let hist = JSON.parse(histcontent)
+
+    let eurData = []
+    hist.forEach(function(entry) {
+        newEntry = {
+            "btcusd_rate": entry['btcusd_rate'],
+            "date": entry['date'],
+            "usdsat_rate": entry['usdsat_rate'],
+            "sateur_rate": parseInt(entry['usdsat_rate'] / eurusd_rate),
+            "btceur_rate": parseFloat(entry['btcusd_rate'] * eurusd_rate).toFixed(2),
+        }
+        eurData.push(newEntry)
+    })
+    const eurHistorical = JSON.stringify(eurData)
+    fs.writeFileSync("./public/historical", eurHistorical)
+    console.log("EUR historical data written to ./public/historical with " + eurData.length + " entries")
+}
+
 // first run convertformat then run hkdrate
 // convertformat()
 
-hkdrate()
+// hkdrate()
+eurrate()
