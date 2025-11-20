@@ -170,6 +170,16 @@
                             date: new Date(d.date)
                         }));
 
+                        // Calculate min and max values from data for proper axis scaling
+                        const rateField = '{{ rate_field }}';
+                        const values = data.map(d => d[rateField]).filter(v => v != null && v > 0);
+                        const minValue = Math.min(...values);
+                        const maxValue = Math.max(...values);
+
+                        // Add padding for logarithmic scale (multiply/divide by factor)
+                        const yAxisMin = Math.floor(minValue / 2);
+                        const yAxisMax = Math.ceil(maxValue * 2);
+
                         // Calculate responsive height
                         const windowWidth = window.innerWidth;
                         let graphHeight;
@@ -315,7 +325,8 @@
                                         },
                                         y: {
                                             type: 'logarithmic',
-                                            max: 1000000000,
+                                            min: yAxisMin,
+                                            max: yAxisMax,
                                             ticks: {
                                                 callback: function(value) {
                                                     return value.toLocaleString() + ' sats';
