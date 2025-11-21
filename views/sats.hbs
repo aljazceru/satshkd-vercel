@@ -7,6 +7,7 @@
 
     <link rel="stylesheet" type="text/css" href="/static/skeleton.css">
     <link rel="stylesheet" type="text/css" href="/static/normalize.css">
+    <link rel="stylesheet" type="text/css" href="/static/mobile.css">
     <link rel="shortcut icon" type="image/png" href="/static/favicon.png" />
     <link href="https://fonts.googleapis.com/css?family=Open+Sans|Raleway&display=swap" rel="stylesheet">
     <script src="/static/chart.min.js"></script>
@@ -108,17 +109,17 @@
                 <table class="u-full-width">
                     <thead>
                         <tr>
-                            <th style="text-align:-webkit-left;font-size:2rem;">{{ date }} </th>
-                            <th style="text-align:end;font-size:2rem;">{{ price }}&nbsp;&nbsp;</th>
-                            <th style="text-align:end;font-size:2rem;white-space: pre;"> {{ percentchange }} </th>
+                            <th style="text-align:left;">{{ date }} </th>
+                            <th style="text-align:right;">{{ price }}&nbsp;&nbsp;</th>
+                            <th style="text-align:right;white-space: pre;"> {{ percentchange }} </th>
                         </tr>
                     </thead>
                     <tbody>
                         {{#each yeardata}}
                         <tr>
-                            <td style="text-align:-webkit-left">{{ this.year }}</td>
-                            <td style="text-align:end">{{ this.sats }} sats </td>
-                            <td style="text-align:end">{{ this.percent }} % </td>
+                            <td style="text-align:left">{{ this.year }}</td>
+                            <td style="text-align:right">{{ this.sats }} sats </td>
+                            <td style="text-align:right">{{ this.percent }} % </td>
                         </tr>
                          {{/each}}
                     </tbody>
@@ -226,7 +227,7 @@
                                             display: true,
                                             text: '{{ subtitle }}',
                                             font: {
-                                                size: 16
+                                                size: window.innerWidth < 768 ? 12 : 16
                                             }
                                         },
                                         legend: {
@@ -257,10 +258,10 @@
                                                         backgroundColor: 'rgba(255, 99, 132, 0.8)',
                                                         color: 'white',
                                                         font: {
-                                                            size: 10,
+                                                            size: window.innerWidth < 768 ? 8 : 10,
                                                             weight: 'bold'
                                                         },
-                                                        padding: 4
+                                                        padding: window.innerWidth < 768 ? 2 : 4
                                                     },
                                                     click: function() {
                                                         marker.click();
@@ -280,7 +281,10 @@
                                                 }
                                             },
                                             ticks: {
-                                                maxTicksLimit: 16
+                                                maxTicksLimit: window.innerWidth < 768 ? 8 : 16,
+                                                font: {
+                                                    size: window.innerWidth < 768 ? 10 : 12
+                                                }
                                             },
                                             grid: {
                                                 display: true
@@ -294,7 +298,10 @@
                                                 callback: function(value) {
                                                     return value.toLocaleString() + ' sats';
                                                 },
-                                                maxTicksLimit: 12
+                                                maxTicksLimit: window.innerWidth < 768 ? 8 : 12,
+                                                font: {
+                                                    size: window.innerWidth < 768 ? 10 : 12
+                                                }
                                             },
                                             grid: {
                                                 display: true
