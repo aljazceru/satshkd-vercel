@@ -8,7 +8,7 @@ const path = require('path');
 const app = express();
 
 const handlebars = require('express-handlebars');
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 const calculate = require('./calculate')
 const enjson = require('./locales/en-eur.json');
@@ -54,8 +54,102 @@ app.use('/static', express.static(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname, 'public', 'css')));
 
 
+// Language mapping from browser codes to app routes
+const languageMap = {
+    'en': '/en-eur',
+    'en-US': '/en-eur',
+    'en-GB': '/en-eur',
+    'de': '/de',
+    'de-DE': '/de',
+    'de-AT': '/de',
+    'de-CH': '/de',
+    'fr': '/fr',
+    'fr-FR': '/fr',
+    'fr-CA': '/fr',
+    'fr-BE': '/fr',
+    'es': '/es',
+    'es-ES': '/es',
+    'es-MX': '/es',
+    'es-AR': '/es',
+    'it': '/it',
+    'it-IT': '/it',
+    'nl': '/nl',
+    'nl-NL': '/nl',
+    'nl-BE': '/nl',
+    'pt': '/pt',
+    'pt-PT': '/pt',
+    'pt-BR': '/pt',
+    'pl': '/pl',
+    'pl-PL': '/pl',
+    'bg': '/bg',
+    'bg-BG': '/bg',
+    'hr': '/hr',
+    'hr-HR': '/hr',
+    'cs': '/cs',
+    'cs-CZ': '/cs',
+    'da': '/da',
+    'da-DK': '/da',
+    'et': '/et',
+    'et-EE': '/et',
+    'fi': '/fi',
+    'fi-FI': '/fi',
+    'el': '/el',
+    'el-GR': '/el',
+    'hu': '/hu',
+    'hu-HU': '/hu',
+    'ga': '/ga',
+    'ga-IE': '/ga',
+    'lv': '/lv',
+    'lv-LV': '/lv',
+    'lt': '/lt',
+    'lt-LT': '/lt',
+    'mt': '/mt',
+    'mt-MT': '/mt',
+    'ro': '/ro',
+    'ro-RO': '/ro',
+    'sk': '/sk',
+    'sk-SK': '/sk',
+    'sl': '/sl',
+    'sl-SI': '/sl',
+    'sv': '/sv',
+    'sv-SE': '/sv'
+};
+
+function getLanguageFromHeader(acceptLanguage) {
+    if (!acceptLanguage) return '/en-eur';
+
+    // Parse Accept-Language header
+    const languages = acceptLanguage.split(',').map(lang => {
+        const [locale, quality = 'q=1.0'] = lang.trim().split(';');
+        const q = quality.split('=')[1] || '1.0';
+        return { locale, q: parseFloat(q) };
+    });
+
+    // Sort by quality (highest first)
+    languages.sort((a, b) => b.q - a.q);
+
+    // Find first supported language
+    for (const { locale } of languages) {
+        // Check exact match first
+        if (languageMap[locale]) {
+            return languageMap[locale];
+        }
+
+        // Check primary language (e.g., 'en' from 'en-US')
+        const primaryLang = locale.split('-')[0];
+        if (languageMap[primaryLang]) {
+            return languageMap[primaryLang];
+        }
+    }
+
+    // Default to English if no supported language found
+    return '/en-eur';
+}
+
 app.get('/', function(req, res) {
-    res.redirect('/en-eur');
+    const acceptLanguage = req.headers['accept-language'];
+    const targetLanguage = getLanguageFromHeader(acceptLanguage);
+    res.redirect(targetLanguage);
 });
 
 // EUR routes

@@ -3,17 +3,16 @@ const fs = require('fs');
 
 module.exports = {
     bfx: async function() {
-        const eurrate = 0.92 // approximate EUR/USD rate
-        const btcDataURL = "https://api-pub.bitfinex.com/v2/ticker/tBTCUSD"
+        const btcDataURL = "https://api-pub.bitfinex.com/v2/ticker/tBTCEUR"
         const response = await axios.get(btcDataURL)
         const data = response.data
             //console.log(data[6])
 
         const satDenominator = 100000000
             // see docs : https://docs.bitfinex.com/reference#rest-public-ticker
-        btcLastPrice = data[6]
+        const btcLastPrice = data[6] // LAST_PRICE in EUR
 
-        const sateur = Math.round((1 / btcLastPrice) * satDenominator * eurrate)
+        const sateur = Math.round(satDenominator / btcLastPrice)
             //console.log("bitfinex last price: ", btcLastPrice, "current satEUR: ", sateur)
         return sateur
     },
@@ -28,22 +27,34 @@ module.exports = {
             hist_entries = []
             let datelist = []
 
-            // get all the years you need from 1 - 10
-            for (let i = 1; i < 11; i++) {
-                const targetDate = new Date(new Date().setFullYear(new Date().getFullYear() - i))
-                const targetDateStr = targetDate.toISOString().slice(0, 10)
+            // Get all years from 2011 to previous year (skip current year since it's shown at top)
+            const currentDate = new Date()
+            const currentYear = currentDate.getFullYear()
+            const previousYear = currentYear - 1
+            const startYear = 2011
 
-                // Find the closest date in historical data
+            for (let year = startYear; year <= previousYear; year++) {
+                let targetDate
+                let targetDateStr
+
+                // For all years, use January 1st (or close to it) to find historical data
+                targetDate = new Date(year, 0, 1) // January 1st of target year
+                targetDateStr = targetDate.toISOString().slice(0, 10)
+
+                // Find the closest date in historical data for this specific year
                 let closestEntry = null
                 let minDiff = Infinity
 
                 for (let j = 0; j < historical.length; j++) {
                     const entryDate = new Date(historical[j]['date'])
-                    const diff = Math.abs(entryDate - targetDate)
+                    // Only consider entries from the target year
+                    if (entryDate.getFullYear() === year) {
+                        const diff = Math.abs(entryDate - targetDate)
 
-                    if (diff < minDiff) {
-                        minDiff = diff
-                        closestEntry = historical[j]
+                        if (diff < minDiff) {
+                            minDiff = diff
+                            closestEntry = historical[j]
+                        }
                     }
                 }
 
@@ -71,7 +82,7 @@ module.exports = {
                 percentage = (-100 * ((rawsat - today_sats) / rawsat)).toFixed(3)
                 final_list.push({ "year": date.toLocaleDateString(), "sats": rawsat.toLocaleString("en-US"), "percent": percentage });
             }
-            return final_list.reverse()
+            return final_list
         } catch (error) {
             console.error("Error trying to read file ", error)
         }
