@@ -33,18 +33,18 @@ h3 {
 table.u-full-width {
     width: 100%;
     margin-top: 20px;
-    font-size: 1rem;
+    font-size: 1.2rem;
 }
 
 table.u-full-width thead th {
-    font-size: 1.2rem;
+    font-size: 1.4rem;
     padding: 10px 5px;
     white-space: nowrap;
 }
 
 table.u-full-width tbody td {
     padding: 12px 5px;
-    font-size: 1rem;
+    font-size: 1.2rem;
 }
 
 /* Mobile-specific styles */
@@ -69,17 +69,17 @@ table.u-full-width tbody td {
 
     /* Table optimization for mobile */
     table.u-full-width {
-        font-size: 0.9rem;
+        font-size: 1.1rem;
     }
 
     table.u-full-width thead th {
-        font-size: 1rem;
+        font-size: 1.2rem;
         padding: 8px 3px;
     }
 
     table.u-full-width tbody td {
         padding: 10px 3px;
-        font-size: 0.9rem;
+        font-size: 1.1rem;
     }
 
     /* Chart container */
@@ -121,17 +121,17 @@ table.u-full-width tbody td {
 
     /* Make table more compact on very small screens */
     table.u-full-width {
-        font-size: 0.85rem;
+        font-size: 1.05rem;
     }
 
     table.u-full-width thead th {
-        font-size: 0.95rem;
+        font-size: 1.15rem;
         padding: 6px 2px;
     }
 
     table.u-full-width tbody td {
         padding: 8px 2px;
-        font-size: 1.2rem;
+        font-size: 1.3rem;
     }
 
     /* Smaller dark toggle for small screens */
