@@ -80,7 +80,7 @@ module.exports = {
                 year = date.getFullYear();
                 rawsat = hist_entries[v]['sateur_rate']
                 percentage = (-100 * ((rawsat - today_sats) / rawsat)).toFixed(3)
-                final_list.push({ "year": date.toLocaleDateString(), "sats": rawsat.toLocaleString("en-US"), "percent": percentage });
+                final_list.push({ "year": date.toLocaleDateString('en-GB'), "sats": rawsat.toLocaleString("en-US"), "percent": percentage });
             }
             return final_list
         } catch (error) {
