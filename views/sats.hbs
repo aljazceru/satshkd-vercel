@@ -270,7 +270,24 @@
                         patternImage.src = '/static/assets/100eur.jpg';
 
                         patternImage.onload = function() {
-                            const pattern = ctx.createPattern(patternImage, 'repeat');
+                            // Scale the pattern image based on viewport size for better mobile display
+                            const scaleFactor = window.innerWidth < 768
+                                ? Math.max(0.3, window.innerWidth / 1500)  // Mobile: scale down proportionally
+                                : window.innerWidth < 1200
+                                    ? 0.7  // Tablet: moderate scaling
+                                    : 1.0; // Desktop: full size
+
+                            // Create a temporary canvas to scale the image
+                            const tempCanvas = document.createElement('canvas');
+                            const tempCtx = tempCanvas.getContext('2d');
+                            tempCanvas.width = patternImage.width * scaleFactor;
+                            tempCanvas.height = patternImage.height * scaleFactor;
+
+                            // Draw scaled image to temporary canvas
+                            tempCtx.drawImage(patternImage, 0, 0, tempCanvas.width, tempCanvas.height);
+
+                            // Create pattern from scaled image
+                            const pattern = ctx.createPattern(tempCanvas, 'repeat');
 
                             // Initialize Chart.js
                             const chart = new Chart(ctx, {
